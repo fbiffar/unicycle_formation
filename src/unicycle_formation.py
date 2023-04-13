@@ -12,7 +12,18 @@ import ast
 
 
 
-
+def calculate_heading(desired_angle, current_angle ):
+            
+    
+    
+    a = desired_angle - current_angle 
+    if (a>math.pi):
+        a -= 2*math.pi
+    if(a<-math.pi):
+        a += 2*math.pi
+    print('desired_point:',point,'heading:',a, 'desired_angle', desired_angle)
+    return a
+    
 
 if __name__ == "__main__":
 
