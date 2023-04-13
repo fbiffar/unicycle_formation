@@ -4,11 +4,8 @@ import rospy
 import math 
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
-from sensor_msgs.msg import LaserScan
 from tf.transformations import euler_from_quaternion 
-import numpy as  np 
-import matplotlib.pyplot as plt
-import ast
+
 
 
 def odomdata_callback_bot1(msg):
@@ -19,7 +16,7 @@ def odomdata_callback_bot1(msg):
 
     #k > 0: balanced configuration, k < 0: synchronised configuration 
 
-    k=1
+    
 
     heading = get_desired_delta_angle(current_angle[0], k)
 
@@ -130,6 +127,7 @@ if __name__ == "__main__":
     odometry_turtle_4 = Odometry()
 
     current_angle = []
+    k = 1
 
 
 
