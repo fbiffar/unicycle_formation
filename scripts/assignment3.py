@@ -39,7 +39,12 @@ def get_desired_delta_angle(bot_angle, k):
     heading = 0
     for angle in orientation: 
         #u(t)i = -k/n sum(sin(thetaj - thetai))
-        heading = heading - k / NUMBER_OF_ROBOTS * math.sin(angle - bot_angle)
+        a = angle - bot_angle
+        if (a>math.pi):
+            a -= 2*math.pi
+        if(a<-math.pi):
+            a += 2*math.pi
+        heading = heading - k / NUMBER_OF_ROBOTS * math.sin(a)
     print("heading: {:.5f}".format(heading))
     return heading
 
