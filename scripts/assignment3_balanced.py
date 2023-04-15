@@ -1,15 +1,39 @@
 #!/usr/bin/env python3
 
+import csv
 import math
 from termios import VT0
 from turtle import position
 import rospy 
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
+from pathlib import Path
 from tf.transformations import euler_from_quaternion 
+import cmath
 
 
 REAL_MODE = False
+
+if REAL_MODE:
+    NUMBER_OF_ROBOTS = 4
+    K                = 1 #k > 0: balanced configuration, k < 0: synchronised configuration  
+    orientation      = [0.0] * NUMBER_OF_ROBOTS
+    position         = [[0.0, 0.0]] * NUMBER_OF_ROBOTS
+    position_complex = [0.0] * NUMBER_OF_ROBOTS
+    q                = [0.0] * NUMBER_OF_ROBOTS
+    w0               = 1.0
+    v0               = 0.1
+else:
+    NUMBER_OF_ROBOTS = 3
+    K                = 10 #k > 0: balanced configuration, k < 0: synchronised configuration 
+    orientation      = [0.0] * NUMBER_OF_ROBOTS
+    position         = [[0.0, 0.0]] * NUMBER_OF_ROBOTS
+    position_complex = [0.0] * NUMBER_OF_ROBOTS
+    q                = [0.0] * NUMBER_OF_ROBOTS
+    w0               = 2.4
+    v0               = 0.05
+
+file = open(Path.home()/Path('catkin_ws/output_balanced.csv'), 'w')
 
 publish_to_cmd_vel_0 = rospy.Publisher('/bot_1/cmd_vel', Twist, queue_size = 10)
 publish_to_cmd_vel_1 = rospy.Publisher('/bot_2/cmd_vel', Twist, queue_size = 10)
@@ -20,24 +44,13 @@ publish_to_cmd_vel_5 = rospy.Publisher('/bot_6/cmd_vel', Twist, queue_size = 10)
 publish_to_cmd_vel_6 = rospy.Publisher('/bot_7/cmd_vel', Twist, queue_size = 10)
 publish_to_cmd_vel_7 = rospy.Publisher('/bot_8/cmd_vel', Twist, queue_size = 10)
 
-if REAL_MODE:
-    NUMBER_OF_ROBOTS = 4
-    K                = 1 #k > 0: balanced configuration, k < 0: synchronised configuration  
-    orientation      = [0.0] * NUMBER_OF_ROBOTS
-    robot_positions  = [0.0] * NUMBER_OF_ROBOTS
-    w0               = 1.0
-    v0               = 0.1
-else:
-    NUMBER_OF_ROBOTS = 3
-    K                = 10 #k > 0: balanced configuration, k < 0: synchronised configuration 
-    orientation      = [0.0] * NUMBER_OF_ROBOTS
-    robot_positions  = [0.0] * NUMBER_OF_ROBOTS
-    w0               = 2.4
-    v0               = 0.05
 
 
 def odomdata_callback(msg, number):
     global orientation
+    global position
+    position[number][0] = msg.pose.pose.position.x
+    position[number][1] = msg.pose.pose.position.y
     quaternion_list = [msg.pose.pose.orientation.x, msg.pose.pose.orientation.y,
                        msg.pose.pose.orientation.z, msg.pose.pose.orientation.w] 
     orientation[number] = euler_from_quaternion(quaternion_list)[2]
@@ -53,13 +66,17 @@ def get_desired_delta_angle(bot_number, k):
             a += 2*math.pi
         heading = heading - k / NUMBER_OF_ROBOTS * math.sin(a)
     print("abs(heading[{}]): {:.5f}".format(bot_number, abs(heading)))
+    store_data(position[bot_number][0], position[bot_number][1], file)
+
+    u_shape = get_u_shape(bot_number)
+
     return heading + w0 * v0
 
 def get_laplacian():
     adjacency = [[]]
     for i in range(NUMBER_OF_ROBOTS): 
         for n in range(NUMBER_OF_ROBOTS):
-            adjacency[i][n] = robot_positions[i]-robot_positions[n]
+            adjacency[i][n] = position_complex[i]-position_complex[n]
     laplacian = [[]]
     for i in range(NUMBER_OF_ROBOTS): 
         row = 0
@@ -69,9 +86,29 @@ def get_laplacian():
         laplacian[i][i] += row
     return laplacian
 
-def get_robot_position_complex(x,y):
+def get_robot_position_complex():
+    for i in len(NUMBER_OF_ROBOTS):
+        position_complex[i] = complex(position[i][0],position[i][1])
 
-    
+def get_q():
+
+    for i in len(NUMBER_OF_ROBOTS):
+        polar = cmath.polar(position_complex[i]) #returns [betrag,phase]
+        q[i] = position_complex[i]/polar[0]- complex(0, w0*position_complex[i]) #exp(j*phase) - j*w0*complex_position
+
+def get_u_shape(number):
+    get_robot_position_complex()
+    get_q()
+    u = 0
+    laplacian = get_laplacian()
+
+    for i in len(NUMBER_OF_ROBOTS):
+
+        polar = cmath.polar(position_complex[i])
+        u += laplacian[number][i] * q[i] #u = (L[i]*q, j*exp(j*phase)
+
+    u *=  complex(0, position_complex[number]/polar[0])
+    return u
 
 
 
@@ -84,6 +121,10 @@ def get_robot_position_complex(x,y):
 
 
 
+def store_data(data0, data1, file): 
+    writer = csv.writer(file)
+    row = [data0, data1]
+    writer.writerow(row)
 
 def move_bot(publish_to_cmd_vel, heading):
     move_the_bot = Twist()
@@ -168,4 +209,4 @@ if __name__ == "__main__":
         rospy.loginfo('My node has been started')
 
     rospy.spin()
-
+    file.close()
