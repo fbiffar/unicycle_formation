@@ -1,14 +1,29 @@
 #!/usr/bin/env python3
 
+import csv
 import math
 from turtle import position
 import rospy 
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
+from pathlib import Path
 from tf.transformations import euler_from_quaternion 
 
 
 REAL_MODE = False
+
+if REAL_MODE:
+    NUMBER_OF_ROBOTS = 4
+    K                = 1 #k > 0: balanced configuration, k < 0: synchronised configuration  
+    orientation      = [0.0] * NUMBER_OF_ROBOTS
+    position         = [[0.0, 0.0]] * NUMBER_OF_ROBOTS
+else:
+    NUMBER_OF_ROBOTS = 8
+    K                = - 10 #k > 0: balanced configuration, k < 0: synchronised configuration 
+    orientation      = [0.0] * NUMBER_OF_ROBOTS
+    position         = [[0.0, 0.0]] * NUMBER_OF_ROBOTS
+
+file = open(Path.home()/Path('catkin_ws/output_synchronised.csv'), 'w')
 
 publish_to_cmd_vel_0 = rospy.Publisher('/bot_1/cmd_vel', Twist, queue_size = 10)
 publish_to_cmd_vel_1 = rospy.Publisher('/bot_2/cmd_vel', Twist, queue_size = 10)
@@ -19,20 +34,15 @@ publish_to_cmd_vel_5 = rospy.Publisher('/bot_6/cmd_vel', Twist, queue_size = 10)
 publish_to_cmd_vel_6 = rospy.Publisher('/bot_7/cmd_vel', Twist, queue_size = 10)
 publish_to_cmd_vel_7 = rospy.Publisher('/bot_8/cmd_vel', Twist, queue_size = 10)
 
-if REAL_MODE:
-    NUMBER_OF_ROBOTS = 4
-    K                = 1 #k > 0: balanced configuration, k < 0: synchronised configuration  
-    orientation      = [0.0] * NUMBER_OF_ROBOTS
-else:
-    NUMBER_OF_ROBOTS = 8
-    K                = - 10 #k > 0: balanced configuration, k < 0: synchronised configuration 
-    orientation      = [0.0] * NUMBER_OF_ROBOTS
 
 
 def odomdata_callback(msg, number):
     global orientation
-    quaternion_list = [msg.pose.pose.orientation.x, msg.pose.pose.orientation.y,
-                       msg.pose.pose.orientation.z, msg.pose.pose.orientation.w] 
+    global position
+    position[number][0] = msg.pose.pose.position.x
+    position[number][1] = msg.pose.pose.position.y
+    quaternion_list     = [msg.pose.pose.orientation.x, msg.pose.pose.orientation.y,
+                           msg.pose.pose.orientation.z, msg.pose.pose.orientation.w] 
     orientation[number] = euler_from_quaternion(quaternion_list)[2]
 
 def get_desired_delta_angle(bot_number, k):
@@ -46,7 +56,13 @@ def get_desired_delta_angle(bot_number, k):
             a += 2*math.pi
         heading = heading - k / NUMBER_OF_ROBOTS * math.sin(a)
     print("abs(heading[{}]): {:.5f}".format(bot_number, abs(heading)))
+    store_data(position[bot_number][0], position[bot_number][1], file)
     return heading
+
+def store_data(data0, data1, file): 
+    writer = csv.writer(file)
+    row = [data0, data1]
+    writer.writerow(row)
 
 def move_bot(publish_to_cmd_vel, heading):
     move_the_bot = Twist()
@@ -108,8 +124,6 @@ def odomdata_callback_7(msg): # msg = /bot_8/odom
     heading = get_desired_delta_angle(7, K)
     move_bot(publish_to_cmd_vel_7, heading)
 
-
-
 if __name__ == "__main__":
     rospy.init_node('turtlebot_controller_node')
 
@@ -131,4 +145,4 @@ if __name__ == "__main__":
         rospy.loginfo('My node has been started')
 
     rospy.spin()
-
+    file.close()
