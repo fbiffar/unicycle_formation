@@ -24,12 +24,14 @@ if REAL_MODE:
     NUMBER_OF_ROBOTS = 4
     K                = 1 #k > 0: balanced configuration, k < 0: synchronised configuration  
     orientation      = [0.0] * NUMBER_OF_ROBOTS
+    robot_positions  = [0.0] * NUMBER_OF_ROBOTS
     w0               = 1.0
     v0               = 0.1
 else:
     NUMBER_OF_ROBOTS = 3
     K                = 10 #k > 0: balanced configuration, k < 0: synchronised configuration 
     orientation      = [0.0] * NUMBER_OF_ROBOTS
+    robot_positions  = [0.0] * NUMBER_OF_ROBOTS
     w0               = 2.4
     v0               = 0.05
 
@@ -52,6 +54,32 @@ def get_desired_delta_angle(bot_number, k):
         heading = heading - k / NUMBER_OF_ROBOTS * math.sin(a)
     print("abs(heading[{}]): {:.5f}".format(bot_number, abs(heading)))
     return heading + w0 * v0
+
+def get_laplacian():
+    adjacency = [[]]
+    for i in range(NUMBER_OF_ROBOTS): 
+        for n in range(NUMBER_OF_ROBOTS):
+            adjacency[i][n] = robot_positions[i]-robot_positions[n]
+    laplacian = [[]]
+    for i in range(NUMBER_OF_ROBOTS): 
+        row = 0
+        for n in range(NUMBER_OF_ROBOTS):
+            laplacian[i][n] = - adjacency[i][n]
+            row += adjacency[i][n]
+        laplacian[i][i] += row
+    return laplacian
+
+def get_robot_position_complex():
+
+
+
+
+        
+
+    
+
+
+
 
 
 
