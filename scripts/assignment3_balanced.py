@@ -17,6 +17,7 @@ REAL_MODE = False
 if REAL_MODE:
     NUMBER_OF_ROBOTS = 4
     K                = 1 #k > 0: balanced configuration, k < 0: synchronised configuration  
+    lmbda            = 1
     orientation      = [0.0] * NUMBER_OF_ROBOTS
     position         = [[0.0, 0.0]] * NUMBER_OF_ROBOTS
     position_complex = [0.0] * NUMBER_OF_ROBOTS
@@ -26,12 +27,13 @@ if REAL_MODE:
 else:
     NUMBER_OF_ROBOTS = 3
     K                = 10 #k > 0: balanced configuration, k < 0: synchronised configuration 
+    lmbda            = 1
     orientation      = [0.0] * NUMBER_OF_ROBOTS
     position         = [[0.0, 0.0]] * NUMBER_OF_ROBOTS
     position_complex = [0.0] * NUMBER_OF_ROBOTS
     q                = [0.0] * NUMBER_OF_ROBOTS
-    w0               = 2.4
-    v0               = 0.05
+    w0               = 0.5
+    v0               = 0.5
 
 file = open(Path.home()/Path('catkin_ws/output_balanced.csv'), 'w')
 
@@ -65,19 +67,21 @@ def get_desired_delta_angle(bot_number, k):
         if(a<-math.pi):
             a += 2*math.pi
         heading = heading - k / NUMBER_OF_ROBOTS * math.sin(a)
-    print("abs(heading[{}]): {:.5f}".format(bot_number, abs(heading)))
+    #print("abs(heading[{}]): {:.5f}".format(bot_number, abs(heading)))
     store_data(position[bot_number][0], position[bot_number][1], file)
 
     u_shape = get_u_shape(bot_number)
 
-    return heading + w0 * v0
+    #return heading + w0 * v0
+    
+    return w0 * v0 + lmbda * u_shape + heading
 
 def get_laplacian():
-    adjacency = [[]]
+    adjacency = [[0.0]* NUMBER_OF_ROBOTS] * NUMBER_OF_ROBOTS
     for i in range(NUMBER_OF_ROBOTS): 
         for n in range(NUMBER_OF_ROBOTS):
             adjacency[i][n] = 1
-    laplacian = [[]]
+    laplacian = [[0.0]* NUMBER_OF_ROBOTS] * NUMBER_OF_ROBOTS
     for i in range(NUMBER_OF_ROBOTS): 
         row = 0
         for n in range(NUMBER_OF_ROBOTS):
@@ -86,29 +90,32 @@ def get_laplacian():
         laplacian[i][i] += row
     return laplacian
 
-def get_robot_position_complex():
-    for i in len(NUMBER_OF_ROBOTS):
-        position_complex[i] = complex(position[i][0],position[i][1])
+def get_robot_position_complex(bot_number):
+    
+    position_complex[bot_number] = complex(position[bot_number][0],position[bot_number][1])
 
-def get_q():
 
-    for i in len(NUMBER_OF_ROBOTS):
-        polar = cmath.polar(position_complex[i]) #returns [betrag,phase]
-        q[i] = position_complex[i]/polar[0]- complex(0, w0*position_complex[i]) #exp(j*phase) - j*w0*complex_position
 
-def get_u_shape(number):
-    get_robot_position_complex()
-    get_q()
+def get_q(bot_number):
+    polar = cmath.polar(position_complex[bot_number]) #returns [betrag,phase]
+    q[bot_number] = position_complex[bot_number]/polar[0]- complex(-w0*v0*position_complex[bot_number].imag, w0*v0*position_complex[bot_number].real) #exp(j*phase) - j*w0*complex_position
+    
+
+def get_u_shape(bot_number):
+
+    get_robot_position_complex(bot_number)
+
+    get_q(bot_number)
+    
     u = 0
     laplacian = get_laplacian()
-
-    for i in len(NUMBER_OF_ROBOTS):
+    for i in range(NUMBER_OF_ROBOTS):
 
         polar = cmath.polar(position_complex[i])
-        u += laplacian[number][i] * q[i] #u = (L[i]*q, j*exp(j*phase)
+        u += laplacian[bot_number][i] * q[i] #u = (L[i]*q, j*exp(j*phase)
 
-    u = - u * complex(0, position_complex[number]/polar[0])
-
+    u = - u * complex(position_complex[bot_number].imag/polar[0], position_complex[bot_number].real/polar[0])
+    print(u.real)
     return u.real
 
 
@@ -201,7 +208,7 @@ if __name__ == "__main__":
         subscribe_to_odom_0 = rospy.Subscriber('/bot_1/odom', Odometry, callback = odomdata_callback_0)
         subscribe_to_odom_1 = rospy.Subscriber('/bot_2/odom', Odometry, callback = odomdata_callback_1)
         subscribe_to_odom_2 = rospy.Subscriber('/bot_3/odom', Odometry, callback = odomdata_callback_2)
-        # subscribe_to_odom_3 = rospy.Subscriber('/bot_4/odom', Odometry, callback = odomdata_callback_3)
+        #subscribe_to_odom_3 = rospy.Subscriber('/bot_4/odom', Odometry, callback = odomdata_callback_3)
         # subscribe_to_odom_4 = rospy.Subscriber('/bot_5/odom', Odometry, callback = odomdata_callback_4)
         # subscribe_to_odom_5 = rospy.Subscriber('/bot_6/odom', Odometry, callback = odomdata_callback_5)
         # subscribe_to_odom_6 = rospy.Subscriber('/bot_7/odom', Odometry, callback = odomdata_callback_6)
