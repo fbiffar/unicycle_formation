@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import math
+from termios import VT0
 from turtle import position
 import rospy 
 from geometry_msgs.msg import Twist
@@ -23,10 +24,14 @@ if REAL_MODE:
     NUMBER_OF_ROBOTS = 4
     K                = 1 #k > 0: balanced configuration, k < 0: synchronised configuration  
     orientation      = [0.0] * NUMBER_OF_ROBOTS
+    w0               = 1.0
+    v0               = 0.1
 else:
-    NUMBER_OF_ROBOTS = 8
-    K                = - 10 #k > 0: balanced configuration, k < 0: synchronised configuration 
+    NUMBER_OF_ROBOTS = 3
+    K                = 10 #k > 0: balanced configuration, k < 0: synchronised configuration 
     orientation      = [0.0] * NUMBER_OF_ROBOTS
+    w0               = 2.4
+    v0               = 0.05
 
 
 def odomdata_callback(msg, number):
@@ -46,19 +51,19 @@ def get_desired_delta_angle(bot_number, k):
             a += 2*math.pi
         heading = heading - k / NUMBER_OF_ROBOTS * math.sin(a)
     print("abs(heading[{}]): {:.5f}".format(bot_number, abs(heading)))
-    return heading
+    return heading + w0 * v0
 
 
 
 def move_bot(publish_to_cmd_vel, heading):
     move_the_bot = Twist()
     move_the_bot.angular.z = heading
-    move_the_bot.linear.x = 0.0
+    move_the_bot.linear.x = v0#0.05
     publish_to_cmd_vel.publish(move_the_bot)
-    if (heading < 0.1 and heading > -0.1):
-        move_the_bot.angular.z = 0.0
-        move_the_bot.linear.x  = 1.0
-        publish_to_cmd_vel.publish(move_the_bot)
+    # if (heading < 0.1 and heading > -0.1):
+    #     move_the_bot.angular.z = 0.0
+    #     move_the_bot.linear.x  = v0
+    #     publish_to_cmd_vel.publish(move_the_bot)
 
 def odomdata_callback_0(msg): # msg = /bot_1/odom
     global move_the_bot_0
@@ -125,11 +130,11 @@ if __name__ == "__main__":
         subscribe_to_odom_0 = rospy.Subscriber('/bot_1/odom', Odometry, callback = odomdata_callback_0)
         subscribe_to_odom_1 = rospy.Subscriber('/bot_2/odom', Odometry, callback = odomdata_callback_1)
         subscribe_to_odom_2 = rospy.Subscriber('/bot_3/odom', Odometry, callback = odomdata_callback_2)
-        subscribe_to_odom_3 = rospy.Subscriber('/bot_4/odom', Odometry, callback = odomdata_callback_3)
-        subscribe_to_odom_4 = rospy.Subscriber('/bot_5/odom', Odometry, callback = odomdata_callback_4)
-        subscribe_to_odom_5 = rospy.Subscriber('/bot_6/odom', Odometry, callback = odomdata_callback_5)
-        subscribe_to_odom_6 = rospy.Subscriber('/bot_7/odom', Odometry, callback = odomdata_callback_6)
-        subscribe_to_odom_7 = rospy.Subscriber('/bot_8/odom', Odometry, callback = odomdata_callback_7)
+        # subscribe_to_odom_3 = rospy.Subscriber('/bot_4/odom', Odometry, callback = odomdata_callback_3)
+        # subscribe_to_odom_4 = rospy.Subscriber('/bot_5/odom', Odometry, callback = odomdata_callback_4)
+        # subscribe_to_odom_5 = rospy.Subscriber('/bot_6/odom', Odometry, callback = odomdata_callback_5)
+        # subscribe_to_odom_6 = rospy.Subscriber('/bot_7/odom', Odometry, callback = odomdata_callback_6)
+        # subscribe_to_odom_7 = rospy.Subscriber('/bot_8/odom', Odometry, callback = odomdata_callback_7)
         rospy.loginfo('My node has been started')
 
     rospy.spin()
