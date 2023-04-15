@@ -35,18 +35,20 @@ def odomdata_callback(msg, number):
                        msg.pose.pose.orientation.z, msg.pose.pose.orientation.w] 
     orientation[number] = euler_from_quaternion(quaternion_list)[2]
 
-def get_desired_delta_angle(bot_angle, k):
+def get_desired_delta_angle(bot_number, k):
     heading = 0
     for angle in orientation: 
         #u(t)i = -k/n sum(sin(thetaj - thetai))
-        a = angle - bot_angle
+        a = angle - orientation[bot_number]
         if (a>math.pi):
             a -= 2*math.pi
         if(a<-math.pi):
             a += 2*math.pi
         heading = heading - k / NUMBER_OF_ROBOTS * math.sin(a)
-    print("heading: {:.5f}".format(heading))
+    print("abs(heading[{}]): {:.5f}".format(bot_number, abs(heading)))
     return heading
+
+
 
 def move_bot(publish_to_cmd_vel, heading):
     move_the_bot = Twist()
@@ -61,51 +63,51 @@ def move_bot(publish_to_cmd_vel, heading):
 def odomdata_callback_0(msg): # msg = /bot_1/odom
     global move_the_bot_0
     odomdata_callback(msg, 0)
-    heading = get_desired_delta_angle(orientation[0], K)
+    heading = get_desired_delta_angle(0, K)
     move_bot(publish_to_cmd_vel_0, heading)
 
 def odomdata_callback_1(msg): # msg = /bot_2/odom
     global move_the_bot_1
     odomdata_callback(msg, 1)
-    heading = get_desired_delta_angle(orientation[1], K)
+    heading = get_desired_delta_angle(1, K)
     move_bot(publish_to_cmd_vel_1, heading)
 
 def odomdata_callback_2(msg): # msg = /bot_3/odom
     global move_the_bot_2
     odomdata_callback(msg, 2)
-    heading = get_desired_delta_angle(orientation[2], K)
+    heading = get_desired_delta_angle(2, K)
     move_bot(publish_to_cmd_vel_2, heading)
 
 def odomdata_callback_3(msg): # msg = /bot_4/odom
     global move_the_bot_3
     odomdata_callback(msg, 3)
-    heading = get_desired_delta_angle(orientation[3], K)
+    heading = get_desired_delta_angle(3, K)
     move_bot(publish_to_cmd_vel_3, heading)
 
 def odomdata_callback_4(msg): # msg = /bot_5/odom
     global move_the_bot_4
     odomdata_callback(msg, 4)
-    heading = get_desired_delta_angle(orientation[4], K)
+    heading = get_desired_delta_angle(4, K)
     move_bot(publish_to_cmd_vel_4, heading)
 
 def odomdata_callback_5(msg): # msg = /bot_6/odom
     global move_the_bot_5
     odomdata_callback(msg, 5)
-    heading = get_desired_delta_angle(orientation[5], K)
+    heading = get_desired_delta_angle(5, K)
     move_bot(publish_to_cmd_vel_5, heading)
 
 
 def odomdata_callback_6(msg): # msg = /bot_7/odom
     global move_the_bot_6
     odomdata_callback(msg, 6)
-    heading = get_desired_delta_angle(orientation[6], K)
+    heading = get_desired_delta_angle(6, K)
     move_bot(publish_to_cmd_vel_6, heading)
 
 
 def odomdata_callback_7(msg): # msg = /bot_8/odom
     global move_the_bot_7
     odomdata_callback(msg, 7)
-    heading = get_desired_delta_angle(orientation[7], K)
+    heading = get_desired_delta_angle(7, K)
     move_bot(publish_to_cmd_vel_7, heading)
 
 
