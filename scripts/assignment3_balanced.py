@@ -76,7 +76,7 @@ def get_laplacian():
     adjacency = [[]]
     for i in range(NUMBER_OF_ROBOTS): 
         for n in range(NUMBER_OF_ROBOTS):
-            adjacency[i][n] = position_complex[i]-position_complex[n]
+            adjacency[i][n] = 1
     laplacian = [[]]
     for i in range(NUMBER_OF_ROBOTS): 
         row = 0
@@ -107,9 +107,9 @@ def get_u_shape(number):
         polar = cmath.polar(position_complex[i])
         u += laplacian[number][i] * q[i] #u = (L[i]*q, j*exp(j*phase)
 
-    u *=  complex(0, position_complex[number]/polar[0])
-    return u
+    u = - u * complex(0, position_complex[number]/polar[0])
 
+    return u.real
 
 
 
