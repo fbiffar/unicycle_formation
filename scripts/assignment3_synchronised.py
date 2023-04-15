@@ -14,16 +14,22 @@ REAL_MODE = False
 
 if REAL_MODE:
     NUMBER_OF_ROBOTS = 4
-    K                = 1 #k > 0: balanced configuration, k < 0: synchronised configuration  
+    K                = 1 #k > 0: balanced configuration, k < 0: synchronised configuration 
+    STORE_COUNTER    = 20 # STORE_COUNTER sets the amount of points which are not saved in the file
+    store_counter    = [0] * NUMBER_OF_ROBOTS
     orientation      = [0.0] * NUMBER_OF_ROBOTS
     position         = [[0.0, 0.0]] * NUMBER_OF_ROBOTS
 else:
     NUMBER_OF_ROBOTS = 8
-    K                = - 10 #k > 0: balanced configuration, k < 0: synchronised configuration 
+    K                = - 10 #k > 0: balanced configuration, k < 0: synchronised configuration
+    STORE_COUNTER    = 20 # STORE_COUNTER sets the amount of points which are not saved in the file
+    store_counter    = [0] * NUMBER_OF_ROBOTS
     orientation      = [0.0] * NUMBER_OF_ROBOTS
     position         = [[0.0, 0.0]] * NUMBER_OF_ROBOTS
 
 file = open(Path.home()/Path('catkin_ws/output_synchronised.csv'), 'w')
+writer = csv.writer(file)
+
 
 publish_to_cmd_vel_0 = rospy.Publisher('/bot_1/cmd_vel', Twist, queue_size = 10)
 publish_to_cmd_vel_1 = rospy.Publisher('/bot_2/cmd_vel', Twist, queue_size = 10)
@@ -56,13 +62,16 @@ def get_desired_delta_angle(bot_number, k):
             a += 2*math.pi
         heading = heading - k / NUMBER_OF_ROBOTS * math.sin(a)
     print("abs(heading[{}]): {:.5f}".format(bot_number, abs(heading)))
-    store_data(position[bot_number][0], position[bot_number][1], file)
+    store_data(position[bot_number][0], position[bot_number][1], bot_number)
     return heading
 
-def store_data(data0, data1, file): 
-    writer = csv.writer(file)
-    row = [data0, data1]
-    writer.writerow(row)
+def store_data(data0, data1, bot_number):
+    if store_counter[bot_number] >= STORE_COUNTER:
+        row = [data0, data1]
+        writer.writerow(row)
+        store_counter[bot_number] = 0
+    else:
+        store_counter[bot_number] += 1
 
 def move_bot(publish_to_cmd_vel, heading):
     move_the_bot = Twist()
