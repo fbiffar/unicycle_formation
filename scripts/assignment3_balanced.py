@@ -25,7 +25,7 @@ if REAL_MODE:
     orientation      = [0.0] * NUMBER_OF_ROBOTS
 else:
     NUMBER_OF_ROBOTS = 8
-    K                = -10 #k > 0: balanced configuration, k < 0: synchronised configuration 
+    K                = - 10 #k > 0: balanced configuration, k < 0: synchronised configuration 
     orientation      = [0.0] * NUMBER_OF_ROBOTS
 
 
