@@ -12,45 +12,50 @@ from tf.transformations import euler_from_quaternion
 import cmath
 
 
-REAL_MODE = False
+REAL_MODE = True
 
 if REAL_MODE:
     NUMBER_OF_ROBOTS = 4
-    K                = 1 #k > 0: balanced configuration, k < 0: synchronised configuration
-    STORE_COUNTER    = 20 # STORE_COUNTER sets the amount of points which are not saved in the file
+    K                = 17 #k > 0: balanced configuration, k < 0: synchronised configuration
+    STORE_COUNTER    = 5 # STORE_COUNTER sets the amount of points which are not saved in the file
     store_counter    = [0] * NUMBER_OF_ROBOTS
-    lmbda            = 1
+    lmbda            = 0.5
     orientation      = [0.0] * NUMBER_OF_ROBOTS
     position         = [[0.0, 0.0]] * NUMBER_OF_ROBOTS
     position_complex = [0.0] * NUMBER_OF_ROBOTS
     q                = [0.0] * NUMBER_OF_ROBOTS
-    w0               = 1.0
+    w0               = 4.0
     v0               = 0.1
+
+    publish_to_cmd_vel_0 = rospy.Publisher('/tb3_1/cmd_vel', Twist, queue_size = 10)
+    publish_to_cmd_vel_1 = rospy.Publisher('/tb3_2/cmd_vel', Twist, queue_size = 10)
+    publish_to_cmd_vel_2 = rospy.Publisher('/tb3_3/cmd_vel', Twist, queue_size = 10)
+    publish_to_cmd_vel_3 = rospy.Publisher('/tb3_0/cmd_vel', Twist, queue_size = 10)
+
 else:
-    NUMBER_OF_ROBOTS = 3
-    K                = 10 #k > 0: balanced configuration, k < 0: synchronised configuration
-    STORE_COUNTER    = 20 # STORE_COUNTER sets the amount of points which are not saved in the file
+    NUMBER_OF_ROBOTS = 4
+    K                = 25 #k > 0: balanced configuration, k < 0: synchronised configuration
+    STORE_COUNTER    = 5 # STORE_COUNTER sets the amount of points which are not saved in the file
     store_counter    = [0] * NUMBER_OF_ROBOTS
-    lmbda            = -0.1
+    lmbda            = 0.5
     orientation      = [0.0] * NUMBER_OF_ROBOTS
     position         = [[0.0, 0.0]] * NUMBER_OF_ROBOTS
     position_complex = [0.0] * NUMBER_OF_ROBOTS
     q                = [0.0] * NUMBER_OF_ROBOTS
     w0               = 2.0 # 1
-    v0               = 0.2 # 0.5
+    v0               = 0.1 # 0.5
+
+    publish_to_cmd_vel_0 = rospy.Publisher('/bot_1/cmd_vel', Twist, queue_size = 10)
+    publish_to_cmd_vel_1 = rospy.Publisher('/bot_2/cmd_vel', Twist, queue_size = 10)
+    publish_to_cmd_vel_2 = rospy.Publisher('/bot_3/cmd_vel', Twist, queue_size = 10)
+    publish_to_cmd_vel_3 = rospy.Publisher('/bot_4/cmd_vel', Twist, queue_size = 10)
+    publish_to_cmd_vel_4 = rospy.Publisher('/bot_5/cmd_vel', Twist, queue_size = 10)
+    publish_to_cmd_vel_5 = rospy.Publisher('/bot_6/cmd_vel', Twist, queue_size = 10)
+    publish_to_cmd_vel_6 = rospy.Publisher('/bot_7/cmd_vel', Twist, queue_size = 10)
+    publish_to_cmd_vel_7 = rospy.Publisher('/bot_8/cmd_vel', Twist, queue_size = 10)
 
 file = open(Path.home()/Path('catkin_ws/output_balanced.csv'), 'w')
 writer = csv.writer(file)
-
-
-publish_to_cmd_vel_0 = rospy.Publisher('/bot_1/cmd_vel', Twist, queue_size = 10)
-publish_to_cmd_vel_1 = rospy.Publisher('/bot_2/cmd_vel', Twist, queue_size = 10)
-publish_to_cmd_vel_2 = rospy.Publisher('/bot_3/cmd_vel', Twist, queue_size = 10)
-publish_to_cmd_vel_3 = rospy.Publisher('/bot_4/cmd_vel', Twist, queue_size = 10)
-publish_to_cmd_vel_4 = rospy.Publisher('/bot_5/cmd_vel', Twist, queue_size = 10)
-publish_to_cmd_vel_5 = rospy.Publisher('/bot_6/cmd_vel', Twist, queue_size = 10)
-publish_to_cmd_vel_6 = rospy.Publisher('/bot_7/cmd_vel', Twist, queue_size = 10)
-publish_to_cmd_vel_7 = rospy.Publisher('/bot_8/cmd_vel', Twist, queue_size = 10)
 
 
 
@@ -73,14 +78,11 @@ def get_desired_delta_angle(bot_number, k):
         if(a<-math.pi):
             a += 2*math.pi
         heading = heading - k / NUMBER_OF_ROBOTS * math.sin(a)
-    print("abs(heading[{}]): {:.5f}".format(bot_number, abs(heading)))
+    print("heading[{}]: {:.5f}".format(bot_number, heading))
     store_data(position[bot_number][0], position[bot_number][1], bot_number)
 
-    u_shape = get_u_shape(bot_number)
-
-    #return heading + w0 * v0
-    
-    return w0 * v0 + lmbda * u_shape + heading
+#    u_shape = get_u_shape(bot_number)    
+    return w0 * v0 + heading
 
 def get_laplacian():
     adjacency = [[0.0]* NUMBER_OF_ROBOTS] * NUMBER_OF_ROBOTS
@@ -104,7 +106,7 @@ def get_robot_position_complex(bot_number):
 
 def get_q(bot_number):
     polar = cmath.polar(position_complex[bot_number]) #returns [betrag,phase]
-    q[bot_number] = position_complex[bot_number]/polar[0]- complex(-w0*v0*position_complex[bot_number].imag, w0*v0*position_complex[bot_number].real) #exp(j*phase) - j*w0*complex_position
+    q[bot_number] = position_complex[bot_number]#/polar[0]- complex(-w0*v0*position_complex[bot_number].imag, w0*v0*position_complex[bot_number].real) #exp(j*phase) - j*w0*complex_position
     
 
 def get_u_shape(bot_number):
@@ -120,18 +122,8 @@ def get_u_shape(bot_number):
         polar = cmath.polar(position_complex[i])
         u += laplacian[bot_number][i] * q[i] #u = (L[i]*q, j*exp(j*phase)
 
-    u = - u * complex(position_complex[bot_number].imag/polar[0], position_complex[bot_number].real/polar[0])
+    u = - u * position_complex[bot_number]/polar[0]
     return u.real
-
-
-
-        
-
-    
-
-
-
-
 
 def store_data(data0, data1, bot_number):
     if store_counter[bot_number] >= STORE_COUNTER:
@@ -210,13 +202,13 @@ if __name__ == "__main__":
         subscribe_to_odom_0 = rospy.Subscriber('/tb3_1/odom', Odometry, callback = odomdata_callback_0)
         subscribe_to_odom_1 = rospy.Subscriber('/tb3_2/odom', Odometry, callback = odomdata_callback_1)
         subscribe_to_odom_2 = rospy.Subscriber('/tb3_3/odom', Odometry, callback = odomdata_callback_2)
-        subscribe_to_odom_3 = rospy.Subscriber('/tb3_4/odom', Odometry, callback = odomdata_callback_3)
+        subscribe_to_odom_3 = rospy.Subscriber('/tb3_0/odom', Odometry, callback = odomdata_callback_3)
         rospy.loginfo('My node has been started')
     else:
         subscribe_to_odom_0 = rospy.Subscriber('/bot_1/odom', Odometry, callback = odomdata_callback_0)
         subscribe_to_odom_1 = rospy.Subscriber('/bot_2/odom', Odometry, callback = odomdata_callback_1)
         subscribe_to_odom_2 = rospy.Subscriber('/bot_3/odom', Odometry, callback = odomdata_callback_2)
-        #subscribe_to_odom_3 = rospy.Subscriber('/bot_4/odom', Odometry, callback = odomdata_callback_3)
+        subscribe_to_odom_3 = rospy.Subscriber('/bot_4/odom', Odometry, callback = odomdata_callback_3)
         # subscribe_to_odom_4 = rospy.Subscriber('/bot_5/odom', Odometry, callback = odomdata_callback_4)
         # subscribe_to_odom_5 = rospy.Subscriber('/bot_6/odom', Odometry, callback = odomdata_callback_5)
         # subscribe_to_odom_6 = rospy.Subscriber('/bot_7/odom', Odometry, callback = odomdata_callback_6)

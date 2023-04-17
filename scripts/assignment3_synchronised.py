@@ -10,35 +10,40 @@ from pathlib import Path
 from tf.transformations import euler_from_quaternion 
 
 
-REAL_MODE = False
+REAL_MODE = True
 
 if REAL_MODE:
     NUMBER_OF_ROBOTS = 4
-    K                = 1 #k > 0: balanced configuration, k < 0: synchronised configuration 
-    STORE_COUNTER    = 20 # STORE_COUNTER sets the amount of points which are not saved in the file
+    K                = -10 #k > 0: balanced configuration, k < 0: synchronised configuration 
+    STORE_COUNTER    = 5 # STORE_COUNTER sets the amount of points which are not saved in the file
     store_counter    = [0] * NUMBER_OF_ROBOTS
     orientation      = [0.0] * NUMBER_OF_ROBOTS
     position         = [[0.0, 0.0]] * NUMBER_OF_ROBOTS
+
+    publish_to_cmd_vel_0 = rospy.Publisher('/tb3_1/cmd_vel', Twist, queue_size = 10)
+    publish_to_cmd_vel_1 = rospy.Publisher('/tb3_2/cmd_vel', Twist, queue_size = 10)
+    publish_to_cmd_vel_2 = rospy.Publisher('/tb3_3/cmd_vel', Twist, queue_size = 10)
+    publish_to_cmd_vel_3 = rospy.Publisher('/tb3_0/cmd_vel', Twist, queue_size = 10)
+
 else:
     NUMBER_OF_ROBOTS = 8
     K                = - 10 #k > 0: balanced configuration, k < 0: synchronised configuration
-    STORE_COUNTER    = 20 # STORE_COUNTER sets the amount of points which are not saved in the file
+    STORE_COUNTER    = 5 # STORE_COUNTER sets the amount of points which are not saved in the file
     store_counter    = [0] * NUMBER_OF_ROBOTS
     orientation      = [0.0] * NUMBER_OF_ROBOTS
     position         = [[0.0, 0.0]] * NUMBER_OF_ROBOTS
 
+    publish_to_cmd_vel_0 = rospy.Publisher('/bot_1/cmd_vel', Twist, queue_size = 10)
+    publish_to_cmd_vel_1 = rospy.Publisher('/bot_2/cmd_vel', Twist, queue_size = 10)
+    publish_to_cmd_vel_2 = rospy.Publisher('/bot_3/cmd_vel', Twist, queue_size = 10)
+    publish_to_cmd_vel_3 = rospy.Publisher('/bot_4/cmd_vel', Twist, queue_size = 10)
+    publish_to_cmd_vel_4 = rospy.Publisher('/bot_5/cmd_vel', Twist, queue_size = 10)
+    publish_to_cmd_vel_5 = rospy.Publisher('/bot_6/cmd_vel', Twist, queue_size = 10)
+    publish_to_cmd_vel_6 = rospy.Publisher('/bot_7/cmd_vel', Twist, queue_size = 10)
+    publish_to_cmd_vel_7 = rospy.Publisher('/bot_8/cmd_vel', Twist, queue_size = 10)
+
 file = open(Path.home()/Path('catkin_ws/output_synchronised.csv'), 'w')
 writer = csv.writer(file)
-
-
-publish_to_cmd_vel_0 = rospy.Publisher('/bot_1/cmd_vel', Twist, queue_size = 10)
-publish_to_cmd_vel_1 = rospy.Publisher('/bot_2/cmd_vel', Twist, queue_size = 10)
-publish_to_cmd_vel_2 = rospy.Publisher('/bot_3/cmd_vel', Twist, queue_size = 10)
-publish_to_cmd_vel_3 = rospy.Publisher('/bot_4/cmd_vel', Twist, queue_size = 10)
-publish_to_cmd_vel_4 = rospy.Publisher('/bot_5/cmd_vel', Twist, queue_size = 10)
-publish_to_cmd_vel_5 = rospy.Publisher('/bot_6/cmd_vel', Twist, queue_size = 10)
-publish_to_cmd_vel_6 = rospy.Publisher('/bot_7/cmd_vel', Twist, queue_size = 10)
-publish_to_cmd_vel_7 = rospy.Publisher('/bot_8/cmd_vel', Twist, queue_size = 10)
 
 
 
@@ -76,11 +81,11 @@ def store_data(data0, data1, bot_number):
 def move_bot(publish_to_cmd_vel, heading):
     move_the_bot = Twist()
     move_the_bot.angular.z = heading
-    move_the_bot.linear.x = 0.0
+    move_the_bot.linear.x = 0.1
     publish_to_cmd_vel.publish(move_the_bot)
     if (heading < 0.1 and heading > -0.1):
         move_the_bot.angular.z = 0.0
-        move_the_bot.linear.x  = 1.0
+        move_the_bot.linear.x  = 0.1
         publish_to_cmd_vel.publish(move_the_bot)
 
 def odomdata_callback_0(msg): # msg = /bot_1/odom
@@ -140,7 +145,7 @@ if __name__ == "__main__":
         subscribe_to_odom_0 = rospy.Subscriber('/tb3_1/odom', Odometry, callback = odomdata_callback_0)
         subscribe_to_odom_1 = rospy.Subscriber('/tb3_2/odom', Odometry, callback = odomdata_callback_1)
         subscribe_to_odom_2 = rospy.Subscriber('/tb3_3/odom', Odometry, callback = odomdata_callback_2)
-        subscribe_to_odom_3 = rospy.Subscriber('/tb3_4/odom', Odometry, callback = odomdata_callback_3)
+        subscribe_to_odom_3 = rospy.Subscriber('/tb3_0/odom', Odometry, callback = odomdata_callback_3)
         rospy.loginfo('My node has been started')
     else:
         subscribe_to_odom_0 = rospy.Subscriber('/bot_1/odom', Odometry, callback = odomdata_callback_0)
