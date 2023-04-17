@@ -49,8 +49,7 @@ Bot 8: θ = -2.75
 
  ![alt text](images/synchronized.png)
 
-### Link to Demo Video
-Here is a Video of the live demo: 
+
 
 
 ## Balanced Mode 
@@ -68,5 +67,5 @@ The red marked point are the positions of the bots when after balancing themselv
 ![alt text](images/balanced.png)
 
 
-### Link to Demo Video 
+## Link to Demo Video 
 Here is a Video of the live demo: 
