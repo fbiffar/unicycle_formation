@@ -29,6 +29,24 @@ For reaching the maximum hence synchronised mode k needs to be < 0
 ### Graph from Simulation 
 the picture shows the path from 8 bots, starting at random positions:
 
+#### Initial Orientation:
+
+Bot 1: θ  = 0
+
+Bot 2: θ = -1.57
+
+Bot 3: θ = 1.57
+
+Bot 4: θ = -2.36
+
+Bot 5: θ = 0.79
+
+Bot 6: θ = -0.78
+
+Bot 7: θ = 2.36
+
+Bot 8: θ = -2.75
+
  ![alt text](images/synchronised.png)
 
 ### Link to Demo Video
@@ -43,9 +61,12 @@ Balanced behavior assumes that the center of mass of the evolution of the unicyc
 For reaching the minimum and by that balanced configuration, k need to be > 0 
 
 ### Graph from Simulation 
-The picture shows the path from 4 bots:
+The picture shows the path from 4 bots running in balaned mode with a steady turning rate of w0 =  2.0 and forward pace of v0 = 0.1.
+
+The red marked point are the positions of the bots when after balancing themselves out for a while. 
 
 ![alt text](images/balanced.png)
 
 
 ### Link to Demo Video 
+Here is a Video of the live demo: 
