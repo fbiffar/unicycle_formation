@@ -9,6 +9,8 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from pathlib import Path
 from tf.transformations import euler_from_quaternion 
+import cmath
+
 
 REAL_MODE = True
 
@@ -17,8 +19,11 @@ if REAL_MODE:
     K                = 17 #k > 0: balanced configuration, k < 0: synchronised configuration
     STORE_COUNTER    = 5 # STORE_COUNTER sets the amount of points which are not saved in the file
     store_counter    = [0] * NUMBER_OF_ROBOTS
+    lmbda            = 0.5
     orientation      = [0.0] * NUMBER_OF_ROBOTS
     position         = [[0.0, 0.0]] * NUMBER_OF_ROBOTS
+    position_complex = [0.0] * NUMBER_OF_ROBOTS
+    q                = [0.0] * NUMBER_OF_ROBOTS
     w0               = 4.0
     v0               = 0.1
 
@@ -32,9 +37,13 @@ else:
     K                = 25 #k > 0: balanced configuration, k < 0: synchronised configuration
     STORE_COUNTER    = 5 # STORE_COUNTER sets the amount of points which are not saved in the file
     store_counter    = [0] * NUMBER_OF_ROBOTS
+    lmbda            = 0.5
     orientation      = [0.0] * NUMBER_OF_ROBOTS
-    w0               = 2.0 
-    v0               = 0.1
+    position         = [[0.0, 0.0]] * NUMBER_OF_ROBOTS
+    position_complex = [0.0] * NUMBER_OF_ROBOTS
+    q                = [0.0] * NUMBER_OF_ROBOTS
+    w0               = 2.0 # 1
+    v0               = 0.1 # 0.5
 
     publish_to_cmd_vel_0 = rospy.Publisher('/bot_1/cmd_vel', Twist, queue_size = 10)
     publish_to_cmd_vel_1 = rospy.Publisher('/bot_2/cmd_vel', Twist, queue_size = 10)
@@ -71,8 +80,46 @@ def get_desired_delta_angle(bot_number, k):
         heading = heading - k / NUMBER_OF_ROBOTS * math.sin(a)
     print("heading[{}]: {:.5f}".format(bot_number, heading))
     store_data(position[bot_number][0], position[bot_number][1], bot_number)
-  
-    return w0 * v0 + heading
+
+    u_shape = get_u_shape(bot_number)   
+
+    return w0 * v0 + heading + lmbda* u_shape
+
+def get_laplacian():
+    adjacency = [[0.0]* NUMBER_OF_ROBOTS] * NUMBER_OF_ROBOTS
+    for i in range(NUMBER_OF_ROBOTS): 
+        for n in range(NUMBER_OF_ROBOTS):
+            adjacency[i][n] = 1
+    laplacian = [[0.0]* NUMBER_OF_ROBOTS] * NUMBER_OF_ROBOTS
+    for i in range(NUMBER_OF_ROBOTS): 
+        row = 0
+        for n in range(NUMBER_OF_ROBOTS):
+            laplacian[i][n] = - adjacency[i][n]
+            row += adjacency[i][n]
+        laplacian[i][i] += row
+    return laplacian
+
+def get_robot_position_complex(bot_number):
+    
+    position_complex[bot_number] = complex(position[bot_number][0],position[bot_number][1])
+
+    
+
+def get_u_shape(bot_number):
+
+    get_robot_position_complex(bot_number)
+
+    q[bot_number] = position_complex[bot_number]
+    
+    u = 0
+    laplacian = get_laplacian()
+    for i in range(NUMBER_OF_ROBOTS):
+
+        polar = cmath.polar(position_complex[i])
+        u += laplacian[bot_number][i] * q[i] 
+
+    u = - u * position_complex[bot_number]/polar[0]
+    return u.real
 
 def store_data(data0, data1, bot_number):
     if store_counter[bot_number] >= STORE_COUNTER:
